@@ -1,0 +1,127 @@
+{{/* System MCP — Deployment + Service (cluster-internal only) */}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-system-mcp
+  labels:
+    app.kubernetes.io/name: urumi-system-mcp
+    app.kubernetes.io/component: mcp-upstream
+spec:
+  replicas: {{ .Values.systemMcp.replicas }}
+  selector:
+    matchLabels:
+      app: urumi-system-mcp
+  template:
+    metadata:
+      labels:
+        app: urumi-system-mcp
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: system-mcp
+          image: {{ .Values.systemMcp.image }}
+          imagePullPolicy: {{ .Values.systemMcp.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.systemMcp.port }}
+          resources:
+            requests:
+              cpu: {{ .Values.systemMcp.resources.requests.cpu }}
+              memory: {{ .Values.systemMcp.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.systemMcp.resources.limits.cpu }}
+              memory: {{ .Values.systemMcp.resources.limits.memory }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.systemMcp.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.systemMcp.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: urumi-system-mcp
+  labels:
+    app.kubernetes.io/name: urumi-system-mcp
+    app.kubernetes.io/component: mcp-upstream
+spec:
+  type: ClusterIP
+  selector:
+    app: urumi-system-mcp
+  ports:
+    - port: {{ .Values.systemMcp.port }}
+      targetPort: {{ .Values.systemMcp.port }}
+      name: mcp-http
+---
+{{/* Inventory MCP — Deployment + Service (cluster-internal only) */}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-inventory-mcp
+  labels:
+    app.kubernetes.io/name: urumi-inventory-mcp
+    app.kubernetes.io/component: mcp-upstream
+spec:
+  replicas: {{ .Values.inventoryMcp.replicas }}
+  selector:
+    matchLabels:
+      app: urumi-inventory-mcp
+  template:
+    metadata:
+      labels:
+        app: urumi-inventory-mcp
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: inventory-mcp
+          image: {{ .Values.inventoryMcp.image }}
+          imagePullPolicy: {{ .Values.inventoryMcp.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.inventoryMcp.port }}
+          resources:
+            requests:
+              cpu: {{ .Values.inventoryMcp.resources.requests.cpu }}
+              memory: {{ .Values.inventoryMcp.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.inventoryMcp.resources.limits.cpu }}
+              memory: {{ .Values.inventoryMcp.resources.limits.memory }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.inventoryMcp.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.inventoryMcp.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: urumi-inventory-mcp
+  labels:
+    app.kubernetes.io/name: urumi-inventory-mcp
+    app.kubernetes.io/component: mcp-upstream
+spec:
+  type: ClusterIP
+  selector:
+    app: urumi-inventory-mcp
+  ports:
+    - port: {{ .Values.inventoryMcp.port }}
+      targetPort: {{ .Values.inventoryMcp.port }}
+      name: mcp-http

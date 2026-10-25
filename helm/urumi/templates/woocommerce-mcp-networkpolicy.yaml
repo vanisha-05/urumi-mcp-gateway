@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: urumi-woocommerce-mcp-netpol
+  labels:
+    app.kubernetes.io/name: urumi-woocommerce-mcp
+    app.kubernetes.io/component: mcp-upstream
+spec:
+  podSelector:
+    matchLabels:
+      app: urumi-woocommerce-mcp
+  policyTypes:
+    - Ingress
+  ingress:
+    # Strictly allow ingress ONLY from the Gateway pods
+    - from:
+        - podSelector:
+            matchLabels:
+              app: urumi-gateway
+      ports:
+        - protocol: TCP
+          port: {{ .Values.woocommerceMcp.port }}

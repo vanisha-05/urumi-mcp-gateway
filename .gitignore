@@ -1,0 +1,55 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+
+# Local databases, backups, and API responses
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+wc-api-response.json
+*-backup*.yaml
+*-backup*.yml
+*-before-recovery*.yaml
+*-before-recovery*.yml
+*-rendered*.yaml
+*-rendered*.yml
+gateway-image-ownership.yaml
+
+# Local development state and logs
+.tursiops/
+*.log
+
+# Local cluster snapshots and recovery files
+gateway-live-before-recovery.yaml
+helm-values-before-recovery.yaml
+mariadb-strategy-patch.yaml
+
+# Local runtime data
+data/
+
+# Local cluster snapshots and recovery files
+gateway-live-before-recovery.yaml
+helm-values-before-recovery.yaml
+mariadb-strategy-patch.yaml
+
+# Local runtime data
+data/
+
+# Temporary Gemini agent backups
+apps/gateway/src/routes/gemini-agent.ts.bak
+apps/gateway/src/routes/gemini-agent.ts.before-date-fix
+apps/gateway/src/routes/gemini-agent.ts.schema-backup
+
+# Unreferenced recovery illustrations
+apps/storefront-theme/assets/images/urumi-chat-recovery-illustration.png
+apps/storefront-theme/assets/images/urumi-gateway-recovery-illustration.png
+
+# Local experimental test script
+test-ollama-live.mjs

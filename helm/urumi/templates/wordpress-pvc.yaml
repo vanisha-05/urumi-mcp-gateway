@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: urumi-wordpress-data
+  labels:
+    app: urumi-wordpress
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.storageClassName | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.wordpress.storageSize | quote }}

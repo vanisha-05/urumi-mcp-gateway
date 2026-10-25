@@ -1,0 +1,126 @@
+wordpress:
+  image: wordpress:php8.3-apache
+  host: localhost
+  storageSize: 1Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+mariadb:
+  image: mariadb:11.4
+  database: wordpress
+  username: wordpress
+  storageSize: 1Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+gateway:
+  image: urumi/gateway:local
+  imagePullPolicy: Never      # loaded via kind load docker-image
+  replicas: 1
+  port: 3003
+  dbPath: /app/data/gateway.db
+  storageSize: 1Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+dashboard:
+  image: urumi/dashboard:local
+  imagePullPolicy: Never
+  replicas: 1
+  port: 80
+  host: localhost
+  path: /dashboard
+  resources:
+    requests:
+      cpu: 50m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 64Mi
+
+woocommerceMcp:
+  image: urumi/woocommerce-mcp:local
+  imagePullPolicy: Never
+  replicas: 1
+  port: 3004
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 300m
+      memory: 256Mi
+
+systemMcp:
+  image: urumi/system-mcp:local
+  imagePullPolicy: Never
+  replicas: 1
+  port: 3001
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+inventoryMcp:
+  image: urumi/inventory-mcp:local
+  imagePullPolicy: Never
+  replicas: 1
+  port: 3002
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+storageClassName: standard
+databaseSecretName: woo-db-secret
+gatewaySecretName: urumi-gateway-secret
+woocommerceSecretName: urumi-woocommerce-secret
+
+ingress:
+  className: nginx
+  tls: false
+
+# Secrets management:
+# - secrets.create=false (default):
+#   During Helm upgrade, existing Secret resources (urumi-gateway-secret, woo-db-secret,
+#   urumi-woocommerce-secret) are discovered from the target cluster and preserved with their
+#   existing data unchanged, preventing credential loss or Secret deletion.
+#   For fresh installations with secrets.create=false, the external Secrets must exist beforehand.
+#   During offline 'helm template' validation, Secret resources are omitted cleanly.
+# - secrets.create=true:
+#   Secrets are created from explicitly supplied configuration below.
+#   Never commit plaintext credentials to source control; supply them via secure values or CLI flags.
+secrets:
+  create: false
+  gateway:
+    hmacSecret: ""
+    encryptionKey: ""
+    geminiApiKey: ""
+  mariadb:
+    rootPassword: ""
+    password: ""
+  woocommerce:
+    baseUrl: "http://urumi-wordpress"
+    consumerKey: ""
+    consumerSecret: ""

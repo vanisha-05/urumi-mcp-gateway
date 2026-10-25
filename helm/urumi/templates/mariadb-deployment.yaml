@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-mariadb
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: urumi-mariadb
+  template:
+    metadata:
+      labels:
+        app: urumi-mariadb
+    spec:
+      containers:
+        - name: mariadb
+          image: {{ .Values.mariadb.image | quote }}
+          ports:
+            - name: mysql
+              containerPort: 3306
+          env:
+            - name: MARIADB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.databaseSecretName }}
+                  key: mariadb-root-password
+            - name: MARIADB_DATABASE
+              value: {{ .Values.mariadb.database | quote }}
+            - name: MARIADB_USER
+              value: {{ .Values.mariadb.username | quote }}
+            - name: MARIADB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.databaseSecretName }}
+                  key: mariadb-password
+          resources:
+            {{- toYaml .Values.mariadb.resources | nindent 12 }}
+          startupProbe:
+            exec:
+              command:
+                - mariadb-admin
+                - ping
+                - -h
+                - 127.0.0.1
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+          livenessProbe:
+            exec:
+              command:
+                - mariadb-admin
+                - ping
+                - -h
+                - 127.0.0.1
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            exec:
+              command:
+                - mariadb-admin
+                - ping
+                - -h
+                - 127.0.0.1
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          volumeMounts:
+            - name: mariadb-data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mariadb-data
+          persistentVolumeClaim:
+            claimName: urumi-mariadb-data

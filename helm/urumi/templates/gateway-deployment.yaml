@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-gateway
+  labels:
+    app.kubernetes.io/name: urumi-gateway
+    app.kubernetes.io/component: gateway
+spec:
+  replicas: {{ .Values.gateway.replicas }}
+  selector:
+    matchLabels:
+      app: urumi-gateway
+  template:
+    metadata:
+      labels:
+        app: urumi-gateway
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100
+        fsGroup: 101
+      initContainers:
+        - name: init-permissions
+          image: node:22-alpine
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+          command: ["sh", "-c", "mkdir -p /app/data && chown -R 100:101 /app/data && chmod 775 /app/data"]
+          volumeMounts:
+            - name: gateway-data
+              mountPath: /app/data
+      containers:
+        - name: gateway
+          image: {{ .Values.gateway.image }}
+          imagePullPolicy: {{ .Values.gateway.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.gateway.port }}
+          env:
+            - name: GATEWAY_PORT
+              value: "{{ .Values.gateway.port }}"
+            - name: GATEWAY_DB_PATH
+              value: {{ .Values.gateway.dbPath | quote }}
+            - name: GATEWAY_KEY_HMAC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.gatewaySecretName }}
+                  key: GATEWAY_KEY_HMAC_SECRET
+            - name: GATEWAY_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.gatewaySecretName }}
+                  key: GATEWAY_ENCRYPTION_KEY
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.gatewaySecretName }}
+                  key: GEMINI_API_KEY
+                  optional: true
+            # Ollama local LLM configuration
+            - name: OLLAMA_BASE_URL
+              value: {{ .Values.gateway.ollamaBaseUrl | default "http://host.docker.internal:11434" | quote }}
+            - name: OLLAMA_MODEL
+              value: {{ .Values.gateway.ollamaModel | default "qwen3:4b" | quote }}
+            - name: OLLAMA_TIMEOUT_MS
+              value: {{ .Values.gateway.ollamaTimeoutMs | default "240000" | quote }}
+            # In-cluster upstream URLs
+            - name: WOOCOMMERCE_MCP_URL
+              value: "http://urumi-woocommerce-mcp:{{ .Values.woocommerceMcp.port }}/mcp"
+            - name: SYSTEM_MCP_URL
+              value: "http://urumi-system-mcp:{{ .Values.systemMcp.port }}/mcp"
+            - name: INVENTORY_MCP_URL
+              value: "http://urumi-inventory-mcp:{{ .Values.inventoryMcp.port }}/mcp"
+          volumeMounts:
+            - name: gateway-data
+              mountPath: /app/data
+          resources:
+            requests:
+              cpu: {{ .Values.gateway.resources.requests.cpu }}
+              memory: {{ .Values.gateway.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.gateway.resources.limits.cpu }}
+              memory: {{ .Values.gateway.resources.limits.memory }}
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.gateway.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.gateway.port }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+      volumes:
+        - name: gateway-data
+          persistentVolumeClaim:
+            claimName: urumi-gateway-pvc

@@ -1,0 +1,39 @@
+{
+  "name": "urumi-mcp-gateway",
+  "version": "1.0.0",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start:gateway": "tsx apps/gateway/src/server.ts",
+    "setup:secrets": "tsx apps/gateway/src/setup-secrets.ts",
+    "provision:admin": "tsx apps/gateway/src/provision-admin.ts",
+    "test:gateway-bootstrap": "tsx --test apps/gateway/src/bootstrap.test.ts",
+    "dev:dashboard": "npm.cmd --prefix apps/dashboard run dev",
+    "build:dashboard": "npm.cmd --prefix apps/dashboard run build",
+    "start:woocommerce": "tsx services/woocommerce-mcp/index.ts",
+    "test:woocommerce": "tsx services/woocommerce-mcp/test-clients.ts",
+    "test": "tsx services/woocommerce-mcp/test-clients.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.1",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^18.0.7",
+    "fastify": "^5.12.5",
+    "oauth-1.0a": "^2.2.6",
+    "zod": "^4.6.5"
+  },
+  "type": "module"
+}

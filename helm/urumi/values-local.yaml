@@ -1,0 +1,38 @@
+# values-local.yaml — Kind cluster local overrides
+# Usage: helm upgrade --install urumi helm/urumi -f helm/urumi/values-local.yaml
+#
+# Local domain approach:
+#   Kind maps port 80 → ingress-nginx on localhost.
+#   We use path-based routing (/dashboard) since a single IP (localhost)
+#   handles all virtual hosts. Add hosts entries if you prefer names:
+#     127.0.0.1  store.local dashboard.local
+#   then set ingress hosts below to store.local / dashboard.local.
+
+wordpress:
+  host: localhost          # store accessible at http://localhost/
+
+dashboard:
+  image: urumi/dashboard:recovery-20261011
+  imagePullPolicy: Never
+  host: localhost
+  path: /dashboard         # dashboard at http://localhost/dashboard
+
+ingress:
+  className: nginx
+  tls: false               # no cert-manager on local Kind
+
+storageClassName: standard # Kind default storage class
+
+# Images were loaded via: kind load docker-image urumi/*:local --name urumi-cluster
+gateway:
+  image: urumi-gateway:date-fix-20261022
+  imagePullPolicy: Never
+
+woocommerceMcp:
+  imagePullPolicy: Never
+
+systemMcp:
+  imagePullPolicy: Never
+
+inventoryMcp:
+  imagePullPolicy: Never

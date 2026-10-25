@@ -1,0 +1,111 @@
+# docker-compose.yml  — local development / smoke-test only
+# For Kubernetes, use helm/urumi charts instead.
+#
+# Usage:
+#   docker compose build
+#   docker compose up
+#   docker compose down -v   # also removes volumes
+
+version: "3.9"
+
+services:
+
+  # ── WooCommerce upstream MCP server ────────────────────────────────────────
+  woocommerce-mcp:
+    build:
+      context: .
+      dockerfile: services/woocommerce-mcp/Dockerfile
+    image: urumi/woocommerce-mcp:local
+    ports:
+      - "3004:3004"
+    environment:
+      WOOCOMMERCE_BASE_URL: ${WOOCOMMERCE_BASE_URL:-http://host.docker.internal}
+      WOOCOMMERCE_CONSUMER_KEY: ${WOOCOMMERCE_CONSUMER_KEY:-ck_placeholder}
+      WOOCOMMERCE_CONSUMER_SECRET: ${WOOCOMMERCE_CONSUMER_SECRET:-cs_placeholder}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3004/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── System & Utilities MCP server ──────────────────────────────────────────
+  system-mcp:
+    build:
+      context: .
+      dockerfile: services/system-mcp/Dockerfile
+    image: urumi/system-mcp:local
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── Warehouse & Inventory MCP server ───────────────────────────────────────
+  inventory-mcp:
+    build:
+      context: .
+      dockerfile: services/inventory-mcp/Dockerfile
+    image: urumi/inventory-mcp:local
+    ports:
+      - "3002:3002"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── MCP Gateway ─────────────────────────────────────────────────────────────
+  gateway:
+    build:
+      context: .
+      dockerfile: apps/gateway/Dockerfile
+    image: urumi/gateway:local
+    ports:
+      - "3003:3003"
+    environment:
+      GATEWAY_PORT: 3003
+      GATEWAY_DB_PATH: /app/data/gateway.db
+      HMAC_SECRET: ${HMAC_SECRET:-change-me-in-production}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-change-me-32chars-in-production!}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      # In-container service names resolve via Docker DNS
+      WOOCOMMERCE_MCP_URL: http://woocommerce-mcp:3004/mcp
+      SYSTEM_MCP_URL: http://system-mcp:3001/mcp
+      INVENTORY_MCP_URL: http://inventory-mcp:3002/mcp
+    volumes:
+      - gateway-data:/app/data
+    depends_on:
+      woocommerce-mcp:
+        condition: service_healthy
+      system-mcp:
+        condition: service_healthy
+      inventory-mcp:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3003/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # ── React Dashboard (nginx) ──────────────────────────────────────────────────
+  dashboard:
+    build:
+      context: .
+      dockerfile: apps/dashboard/Dockerfile
+    image: urumi/dashboard:local
+    ports:
+      - "8080:80"
+    depends_on:
+      gateway:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  gateway-data:
+    driver: local

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: urumi-mariadb-data
+  labels:
+    app: urumi-mariadb
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.storageClassName | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.mariadb.storageSize | quote }}

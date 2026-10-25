@@ -1,0 +1,37 @@
+# values-prod.yaml — Production VPS (k3s) overrides
+# Usage: helm upgrade --install urumi helm/urumi -f helm/urumi/values-prod.yaml
+#
+# What changes from local → prod:
+#   - Real hostnames instead of localhost
+#   - TLS via cert-manager ClusterIssuer
+#   - imagePullPolicy: Always (images pulled from a registry, not loaded locally)
+#   - storageClassName: local-path (k3s default) or a cloud PVC class
+#   - Resource limits may be increased for production load
+
+wordpress:
+  host: store.example.com      # change to your domain
+
+dashboard:
+  imagePullPolicy: Always
+  host: dashboard.example.com  # change to your domain
+  path: /                      # root path on its own subdomain
+
+ingress:
+  className: nginx
+  tls: true
+  certIssuer: letsencrypt-prod  # cert-manager ClusterIssuer name
+
+storageClassName: local-path    # k3s default; use 'gp2' on EKS, etc.
+
+gateway:
+  imagePullPolicy: Always
+  replicas: 1                   # increase to 2+ with a shared PVC or external DB
+
+woocommerceMcp:
+  imagePullPolicy: Always
+
+systemMcp:
+  imagePullPolicy: Always
+
+inventoryMcp:
+  imagePullPolicy: Always

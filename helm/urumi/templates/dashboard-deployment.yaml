@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: urumi-dashboard
+  labels:
+    app.kubernetes.io/name: urumi-dashboard
+    app.kubernetes.io/component: dashboard
+spec:
+  replicas: {{ .Values.dashboard.replicas }}
+  selector:
+    matchLabels:
+      app: urumi-dashboard
+  template:
+    metadata:
+      labels:
+        app: urumi-dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: {{ .Values.dashboard.image }}
+          imagePullPolicy: {{ .Values.dashboard.imagePullPolicy }}
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: {{ .Values.dashboard.resources.requests.cpu }}
+              memory: {{ .Values.dashboard.resources.requests.memory }}
+            limits:
+              cpu: {{ .Values.dashboard.resources.limits.cpu }}
+              memory: {{ .Values.dashboard.resources.limits.memory }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: urumi-dashboard
+  labels:
+    app.kubernetes.io/name: urumi-dashboard
+    app.kubernetes.io/component: dashboard
+spec:
+  selector:
+    app: urumi-dashboard
+  ports:
+    - port: 80
+      targetPort: 80
+      name: http
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: urumi-dashboard-ingress
+  labels:
+    app.kubernetes.io/name: urumi-dashboard
+    app.kubernetes.io/component: dashboard
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    {{- if .Values.ingress.tls }}
+    cert-manager.io/cluster-issuer: {{ .Values.ingress.certIssuer | default "letsencrypt-prod" }}
+    {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- if .Values.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.dashboard.host }}
+      secretName: urumi-dashboard-tls
+  {{- end }}
+  rules:
+    - host: {{ .Values.dashboard.host }}
+      http:
+        paths:
+          - path: {{ .Values.dashboard.path | default "/" }}(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: urumi-dashboard
+                port:
+                  number: 80
